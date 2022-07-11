@@ -1,11 +1,14 @@
-name = "worker-typescript-template"
-type = "javascript"
-zone_id = ""
-account_id = ""
-route = ""
+name = "scraped-cdn"
+main = "./src/index.js"
+account_id = "c55e4775f535013f9709f760c1eb94f2"
 workers_dev = true
+compatibility_date = "2022-06-04"
+node_compat = true
 
-[build]
-command = "npm install && npm run build"
-[build.upload]
-format = "service-worker"
+[vars]
+ENDPOINT=""
+ACCESS_KEY=""
+SECRET_ACCESS_KEY=""
+MONGO_URI=""
+JWT_SECRET=""
+ORIGINS=""

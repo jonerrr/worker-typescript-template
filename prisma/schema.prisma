@@ -1,0 +1,174 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGO_URI")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+
+model User {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  email          String          @unique
+  username       String          @unique
+  password       String
+  picture        String?
+  role           Role            @default(USER)
+  verified       Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  lastLogin      DateTime?
+  banned         Boolean         @default(false)
+  banReason      String?
+  banExpireAt    DateTime?
+  invites        Invite[]
+  actions        Action[]
+  followedComics FollowedComic[]
+  notifications  Notification[]
+  reports        Report[]
+  ratings        Rating[]
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMINISTRATOR
+}
+
+model Invite {
+  id       String    @id @map("_id")
+  user     User      @relation(fields: [userId], references: [id])
+  userId   String    @db.ObjectId
+  used     Boolean   @default(false)
+  usedBy   String?   @db.ObjectId
+  usedAt   DateTime?
+  expireAt DateTime?
+}
+
+model Action {
+  id       String     @id @map("_id")
+  user     User       @relation(fields: [userId], references: [id])
+  userId   String     @db.ObjectId
+  type     ActionType
+  newData  String?
+  expireAt DateTime?
+}
+
+model FollowedComic {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  user         User         @relation(fields: [userId], references: [id])
+  userId       String       @db.ObjectId
+  comic        Comic        @relation(fields: [comicId], references: [id])
+  comicId      String       @db.ObjectId
+  chaptersRead Int[]
+  status       FollowStatus @default(READING)
+}
+
+enum FollowStatus {
+  READING
+  COMPLETED
+  ON_HOLD
+  DROPPED
+  PLAN_TO_READ
+}
+
+model Notification {
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  user     User      @relation(fields: [userId], references: [id])
+  userId   String    @db.ObjectId
+  viewed   Boolean   @default(false)
+  message  String
+  expireAt DateTime?
+}
+
+enum ActionType {
+  EMAIL
+  PASSWORD
+  VERIFY
+}
+
+model Comic {
+  id               String          @id @map("_id")
+  name             String
+  alternativeNames String[]
+  addedAt          DateTime        @default(now())
+  tags             String[]
+  artists          String[]
+  authors          String[]
+  genres           String[]
+  status           ComicStatus     @default(ONGOING)
+  description      String?
+  chapters         Chapter[]
+  thumbnail        String
+  lastScraped      DateTime?
+  scrapeUrl        String
+  type             ScrapeType
+  ratings          Rating[]
+  follows          FollowedComic[]
+}
+
+enum ComicStatus {
+  ONGOING
+  HAITUS
+  COMPLETED
+  CANCELLED
+}
+
+model Rating {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  comic   Comic  @relation(fields: [comicId], references: [id])
+  comicId String @db.ObjectId
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String @db.ObjectId
+  rating  Int
+}
+
+enum ScrapeType {
+  WORDPRESS_1
+  WORDPRESS_2
+  WORDPRESS_3
+  MANGADEX
+}
+
+model Scrape {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  requestedBy String    @db.ObjectId
+  start       DateTime?
+  end         DateTime?
+  createdAt   DateTime  @default(now())
+  url         String
+  comicId     String?   @db.ObjectId
+}
+
+model Chapter {
+  id      String  @id @default(auto()) @map("_id") @db.ObjectId
+  number  Int     @unique
+  comic   Comic   @relation(fields: [comicId], references: [id])
+  comicId String  @db.ObjectId
+  name    String?
+}
+
+model Report {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  user      User?        @relation(fields: [userId], references: [id])
+  userId    String?      @db.ObjectId
+  system    Boolean      @default(false)
+  comment   String?
+  targets   String[]     @db.ObjectId
+  status    ReportStatus
+  type      ReportType   @default(OTHER)
+  response  String?
+  createdAt DateTime     @default(now())
+}
+
+enum ReportType {
+  DUPLICATE
+  UPDATE_SCRAPE_URL
+  OTHER
+}
+
+enum ReportStatus {
+  AWAITING_RESPONSE
+  COMPLETE
+}
